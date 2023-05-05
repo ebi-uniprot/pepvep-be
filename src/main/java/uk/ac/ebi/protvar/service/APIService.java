@@ -49,7 +49,7 @@ public class APIService {
 	}
 
 	public PopulationObservation getPopulationObservation(String accession, int position) {
-		return populationFetcher.fetchPopulationObservation(accession, position + "-" + position);
+		return populationFetcher.fetchPopulationObservation(accession, position);
 	}
 
 	public List<PDBeStructure> getStructure(String accession, int position) {

@@ -1,12 +1,15 @@
 package uk.ac.ebi.protvar.fetcher;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -16,40 +19,39 @@ import uk.ac.ebi.protvar.model.api.DataServiceProtein;
 import uk.ac.ebi.protvar.model.api.ProteinFeature;
 import uk.ac.ebi.protvar.model.response.Protein;
 import uk.ac.ebi.protvar.repo.UniprotAPIRepo;
+import uk.ac.ebi.protvar.utils.FetcherUtils;
 import uk.ac.ebi.protvar.utils.ProteinHelper;
 
 @Service
 @AllArgsConstructor
 public class ProteinFetcher {
-	private static final String PROTEIN_API_ERROR = "Protein API error";
+
 	private static final Logger logger = LoggerFactory.getLogger(ProteinFetcher.class);
+
+	private final Map<String, DataServiceProtein> cache2 = new ConcurrentHashMap<>();
 
 	private UniprotAPIRepo uniprotAPIRepo;
 	private ProteinAPI2ProteinConverter converter;
 
+
 	/**
-	 * 
-	 * @return - Map of accession and Protein. Empty map if no Protein found
+	 * Prefetch data from Proteins API and cache in application for
+	 * subsequent retrieval.
 	 */
-	public Map<String, Protein> fetch(String accessions) throws ServiceException {
+	public void prefetch(Set<String> accessions) {
+		Set<String> cachedAccessions = cache2.keySet();
 
-		Map<String, Protein> accessionProteinMap = new HashMap<>();
-		if (!StringUtils.isEmpty(accessions)) {
+		// check accession in ProteinsCache
+		Set<String> notCachedAccessions = accessions.stream().filter(Predicate.not(cachedAccessions::contains)).collect(Collectors.toSet());
+		List<Set<String>> notCachedAccessionsPartitions = FetcherUtils.partitionSet(notCachedAccessions, FetcherUtils.PARTITION_SIZE);
 
-			DataServiceProtein[] dataServiceProteins;
-			try {
-				dataServiceProteins = uniprotAPIRepo.getProtein(accessions);
-			} catch (Exception ex) {
-				String message = "input:" + accessions + " exception: " + ex.getMessage();
-				throw new ServiceException(PROTEIN_API_ERROR, message);
-			}
+		notCachedAccessionsPartitions.stream().parallel().forEach(accessionsSet -> {
+			DataServiceProtein[] dataServiceProteins = uniprotAPIRepo.getProtein(String.join(",", accessionsSet));
 			for (DataServiceProtein dsp : dataServiceProteins) {
-				logger.info("Processing accession: {}", dsp.getAccession());
-				Protein protein = converter.fetch(dsp);
-				accessionProteinMap.put(dsp.getAccession(), protein);
+				logger.info("Caching Protein: {}", dsp.getAccession());
+				cache2.put(dsp.getAccession(), dsp);
 			}
-		}
-		return accessionProteinMap;
+		});
 	}
 
 	/**
@@ -58,9 +60,18 @@ public class ProteinFetcher {
 	 */
 	public Protein fetch(String accession, int position) {
 		if (!StringUtils.isEmpty(accession)) {
-			DataServiceProtein[] dataServiceProteins = uniprotAPIRepo.getProtein(accession);
-			if (dataServiceProteins != null && dataServiceProteins.length > 0) {
-				Protein protein = converter.fetch(dataServiceProteins[0]);
+			DataServiceProtein dsp = null;
+			if (cache2.containsKey(accession)) {
+				dsp = cache2.get(accession);
+			} else {
+				DataServiceProtein[] dataServiceProteins = uniprotAPIRepo.getProtein(accession);
+				if (dataServiceProteins != null && dataServiceProteins.length > 0) {
+					dsp = dataServiceProteins[0];
+					cache2.put(accession, dsp);
+				}
+			}
+			if (dsp != null) {
+				Protein protein = converter.fetch(dsp);
 				List<ProteinFeature> features = ProteinHelper.filterFeatures(protein.getFeatures(), position, position);
 				protein.setFeatures(features);
 				protein.setPosition(position);

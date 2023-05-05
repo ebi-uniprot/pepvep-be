@@ -51,6 +51,11 @@ public class AppTestConfig {
 			}
 
 			@Override
+			public DataServiceVariation[] getVariationAccessionLocations(String accLocs) {
+				return null;
+			}
+
+			@Override
 			public DataServiceProtein[] getProtein(String accessions) {
 				FileInputStream fis;
 				try {
@@ -101,7 +106,12 @@ public class AppTestConfig {
 			}
 
 			@Override
-			public DataServiceVariation[] getVariationByAccession(String accession, String location) {
+			public DataServiceVariation[] getVariation(String accessions) {
+				return null;
+			}
+
+			@Override
+			public DataServiceVariation[] getVariation(String accession, int location) {
 				try {
 					String variationJsonFile = "src/test/resources/variation.json";
 					if ("P68431".equalsIgnoreCase(accession)) {

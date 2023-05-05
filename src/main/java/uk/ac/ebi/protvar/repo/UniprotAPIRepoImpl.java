@@ -20,14 +20,13 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
 import uk.ac.ebi.protvar.model.PDBeRequest;
-import uk.ac.ebi.protvar.input.UserInput;
 import uk.ac.ebi.protvar.model.api.DataServiceCoordinate;
 import uk.ac.ebi.protvar.model.api.DataServiceProtein;
 import uk.ac.ebi.protvar.model.api.DataServiceVariation;
 import uk.ac.ebi.protvar.model.response.PDBeStructure;
 
 @Repository
-@RequestScope
+//@RequestScope
 @AllArgsConstructor
 public class UniprotAPIRepoImpl implements UniprotAPIRepo {
 	private static final Logger logger = LoggerFactory.getLogger(UniprotAPIRepoImpl.class);
@@ -60,27 +59,53 @@ public class UniprotAPIRepoImpl implements UniprotAPIRepo {
 	}
 
 	@Override
-	public DataServiceVariation[] getVariationByAccession(String accession, String location) {
-		logger.info("Calling colocated variation: {}", accession);
+	public DataServiceVariation[] getVariation(String accessions) {
 		DefaultUriBuilderFactory handler = (DefaultUriBuilderFactory) this.variantRestTemplate.getUriTemplateHandler();
-		MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
-		queryParams.add(PARAM_TAXID, TAX_ID_HUMAN);
-		queryParams.add(PARAM_ACCESSION, accession);
-		if (location != null) {
-			queryParams.add(PARAM_LOCATION, location);
-		}
-		UriBuilder uriBuilder = handler.builder().queryParams(queryParams);
+		UriBuilder uriBuilder = handler.builder().queryParam(PARAM_ACCESSION, accessions).queryParam(PARAM_TAXID,
+				TAX_ID_HUMAN);
+		logger.info("Variation API call: {}", uriBuilder.build());
 		ResponseEntity<DataServiceVariation[]> response = this.variantRestTemplate.getForEntity(uriBuilder.build(),
 				DataServiceVariation[].class);
 		return response.getBody();
 	}
 
 	@Override
+	public DataServiceVariation[] getVariation(String accession, int location) {
+		DefaultUriBuilderFactory handler = (DefaultUriBuilderFactory) this.variantRestTemplate.getUriTemplateHandler();
+		MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
+		queryParams.add(PARAM_TAXID, TAX_ID_HUMAN);
+		queryParams.add(PARAM_ACCESSION, accession);
+		queryParams.add(PARAM_LOCATION, String.valueOf(location));
+		UriBuilder uriBuilder = handler.builder().queryParams(queryParams);
+		logger.info("Variation API call: {}", uriBuilder.build());
+		ResponseEntity<DataServiceVariation[]> response = this.variantRestTemplate.getForEntity(uriBuilder.build(),
+				DataServiceVariation[].class);
+		return response.getBody();
+	}
+
+	/**
+	 * URI structure
+	 * BASE/accession_locations/ACC1:POS1|ACC2:POS2
+	 * @param accLocs
+	 * @return
+	 */
+	@Override
+	public DataServiceVariation[] getVariationAccessionLocations(String accLocs) {
+		DefaultUriBuilderFactory handler = (DefaultUriBuilderFactory) this.variantRestTemplate.getUriTemplateHandler();
+		UriBuilder uriBuilder = handler.builder().path("accession_locations/").path(accLocs);
+		logger.info("Variation API call: {}", uriBuilder.build());
+		ResponseEntity<DataServiceVariation[]> response = this.variantRestTemplate.getForEntity(uriBuilder.build(),
+				DataServiceVariation[].class);
+		return response.getBody();
+	}
+
+
+	@Override
 	public DataServiceProtein[] getProtein(String accessions) {
 		DefaultUriBuilderFactory handler = (DefaultUriBuilderFactory) this.proteinRestTemplate.getUriTemplateHandler();
-		logger.info("Calling protein for accessions -> {}", accessions);
 		UriBuilder uriBuilder = handler.builder().queryParam(PARAM_ACCESSION, accessions).queryParam(PARAM_TAXID,
 				TAX_ID_HUMAN);
+		logger.info("Protein API call: {}", uriBuilder.build());
 		ResponseEntity<DataServiceProtein[]> response = this.proteinRestTemplate.getForEntity(uriBuilder.build(),
 				DataServiceProtein[].class);
 		return response.getBody();

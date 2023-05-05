@@ -13,13 +13,16 @@ public interface UniprotAPIRepo {
 	
 	DataServiceVariation[] getVariationByParam(String parameter, String pathParam);
 
+	DataServiceVariation[] getVariationAccessionLocations(String accLocs);
+
 	DataServiceProtein[] getProtein(String accessions);
 
 	//DataServiceCoordinate[] getGene(UserInput userInput);
 
 	Object[] getPDBe(List<PDBeRequest> requests);
 
-	DataServiceVariation[] getVariationByAccession(String accession, String location);
+	DataServiceVariation[] getVariation(String accessions);
+	DataServiceVariation[] getVariation(String accession, int location);
 
 	String getUniproAccession(String accession);
 

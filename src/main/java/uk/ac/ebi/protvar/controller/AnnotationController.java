@@ -1,5 +1,7 @@
 package uk.ac.ebi.protvar.controller;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import uk.ac.ebi.protvar.loader.PDBeLoader;
+import uk.ac.ebi.protvar.loader.PDBeStructureResidue;
 import uk.ac.ebi.protvar.model.response.*;
 import uk.ac.ebi.protvar.service.APIService;
 
@@ -25,6 +29,7 @@ import uk.ac.ebi.protvar.service.APIService;
 @AllArgsConstructor
 public class AnnotationController {
   private APIService service;
+  private PDBeLoader pdBeLoader;
 
   /**
    * Returns functional information relevant to the input residue in the UniProt canonical isoform, the region
@@ -80,11 +85,34 @@ public class AnnotationController {
    * @return List of <code>PDBeStructure</code> Mappings from UniProt position to position in all relevant PDB structures
    */
   @Operation(summary = "- retrieve mappings of protein position to structures")
-  @GetMapping(value = "/structure/{accession}/{position}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/structure_new/{accession}/{position}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PDBeStructure>> getStructure(
     @Parameter(example = "Q9NUW8") @PathVariable("accession") String accession,
     @Parameter(example = "493") @PathVariable("position") int position) {
     List<PDBeStructure> object = service.getStructure(accession, position);
+    List<String> ss = new ArrayList<>();
+    object.forEach(r -> {
+      ss.add(r.getPdb_id() + "," + r.getChain_id() + "," + r.getStart() +
+              "," + r.getResolution() + "," +r.getExperimental_method());
+    });
+    Collections.sort(ss);
+    System.out.println("OLD/"+ss.toString());
+    return new ResponseEntity<>(object, HttpStatus.OK);
+  }
+
+  @Operation(summary = "- retrieve mappings of protein position to structures")
+  @GetMapping(value = "/structure/{accession}/{position}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<List<PDBeStructureResidue>> getNewStructure(
+          @Parameter(example = "Q9NUW8") @PathVariable("accession") String accession,
+          @Parameter(example = "493") @PathVariable("position") int position) {
+    List<PDBeStructureResidue> object = pdBeLoader.getPDBeStructureResidue(accession, position);
+    List<String> ss = new ArrayList<>();
+    object.forEach(r -> {
+      ss.add(r.getPdb_id() + "," + r.getChain_id() + "," + r.getStart() +
+              "," + r.getResolution() + "," +r.getExperimental_method());
+    });
+    Collections.sort(ss);
+    System.out.println("NEW/"+ss.toString());
     return new ResponseEntity<>(object, HttpStatus.OK);
   }
 }

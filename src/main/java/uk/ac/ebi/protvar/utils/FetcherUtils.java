@@ -1,14 +1,15 @@
 package uk.ac.ebi.protvar.utils;
 
+import com.google.common.collect.Lists;
 import uk.ac.ebi.protvar.model.api.DSPSource;
 import uk.ac.ebi.protvar.model.api.Evidence;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class FetcherUtils {
+  public static final int PARTITION_SIZE = 99; // 1 less than accepted
   public static String evidencesToString(List<Evidence> evidences) {
     if (evidences != null && !evidences.isEmpty()) {
       Map<String, List<DSPSource>> evidenceSourceMap = evidences.stream()
@@ -38,5 +39,12 @@ public class FetcherUtils {
       return "are";
     }
     return "is";
+  }
+
+  public static List<Set<String>> partitionSet(Set<String> inputSet, int partitionSize) {
+    List<String> inputList = new ArrayList<>(inputSet);
+    List<List<String>> partitions = Lists.partition(inputList, partitionSize);
+    List<Set<String>> partitionSet =  partitions.stream().map((Function<List<String>, HashSet<String>>) HashSet::new).collect(Collectors.toList());
+    return partitionSet;
   }
 }

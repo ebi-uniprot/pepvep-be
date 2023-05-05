@@ -24,12 +24,11 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-
 import uk.ac.ebi.protvar.cache.RestTemplateCache;
 
 @SpringBootApplication
 @CrossOrigin
-@EnableAsync
+//@EnableAsync
 public class ApplicationMainClass {
 	@Value(("${variation.api}"))
 	private String variationAPI;
@@ -43,11 +42,12 @@ public class ApplicationMainClass {
 	@Value(("${pdbe.api}"))
 	private String pdbeAPI;
 
+
 	public static void main(String[] args) {
 		SpringApplication.run(ApplicationMainClass.class, args);
 	}
 
-
+/*
 	@Bean
 	public Executor taskExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -57,7 +57,7 @@ public class ApplicationMainClass {
 		executor.setThreadNamePrefix("Async-");
 		executor.initialize();
 		return executor;
-	}
+	}*/
 
 	@Bean
 	public CorsFilter corsFilter() {
@@ -79,6 +79,7 @@ public class ApplicationMainClass {
 	@Bean
 	//@RequestScope
 	public RestTemplate variantRestTemplate() {
+
 		RestTemplate restTemplate = new RestTemplateCache();
 		restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
 		restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(variationAPI));
@@ -111,6 +112,7 @@ public class ApplicationMainClass {
 		restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(pdbeAPI));
 		return restTemplate;
 	}
+
 
 	@Bean
 	RestTemplateCustomizer retryRestTemplateCustomizer() {

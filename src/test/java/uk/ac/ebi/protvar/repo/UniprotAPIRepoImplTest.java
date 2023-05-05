@@ -100,7 +100,7 @@ public class UniprotAPIRepoImplTest {
 
 		Mockito.when(variantRestTemplate.getForEntity(uriBuilder.build(), DataServiceVariation[].class))
 				.thenReturn(varResp);
-		DataServiceVariation[] dsv = uniprotAPIRepo.getVariationByAccession("P21802", "89993420-89993420");
+		DataServiceVariation[] dsv = uniprotAPIRepo.getVariation("P21802:89993420");
 		assertEquals(4, dsv.length);
 	}
 

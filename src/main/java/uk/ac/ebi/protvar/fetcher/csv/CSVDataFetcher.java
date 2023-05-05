@@ -59,7 +59,7 @@ public class CSVDataFetcher {
 
 	private DownloadService downloadService;
 
-	@Async
+	//@Async
 	public void writeCSVResult(List<String> inputs, List<OPTIONS> options, String email, String jobName, Download download) {
 		try {
 			writeCSVResult(inputs.stream(), options, email, jobName, download);
@@ -69,7 +69,7 @@ public class CSVDataFetcher {
 		}
 	}
 
-	@Async
+	//@Async
 	public void writeCSVResult(Path path, List<OPTIONS> options, String email, String jobName, Download download) {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path.toFile())))) {
 			writeCSVResult(br.lines(), options, email, jobName, download);
